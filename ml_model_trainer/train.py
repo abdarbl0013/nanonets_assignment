@@ -8,8 +8,8 @@ def getopts(argv):
     return opts
 
 if __name__ == '__main__':
-	from sys import argv
-	myargs = getopts(argv)
-	from time import sleep
-	sleep(100)
-	print {"i": myargs['--i'], "j": myargs['--j'], "k": myargs['--k'], "images": myargs['--images'], "accuracy": random.random()}
+    from sys import argv
+    myargs = getopts(argv)
+    from time import sleep
+    sleep(100)
+    print({"i": myargs['--i'], "j": myargs['--j'], "k": myargs['--k'], "images": myargs['--images'], "accuracy": random.random()})

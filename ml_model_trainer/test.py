@@ -12,4 +12,4 @@ if __name__ == '__main__':
     myargs = getopts(argv)
     from time import sleep
     sleep(0.5)
-    print {"i": myargs['--i'], "j": myargs['--j'], "k": myargs['--k'], "image": myargs['--image'], "accuracy": random.random()}
+    print({"i": myargs['--i'], "j": myargs['--j'], "k": myargs['--k'], "image": myargs['--image'], "accuracy": random.random()})
