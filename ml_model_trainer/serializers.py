@@ -1,3 +1,4 @@
+import os
 import ast
 from subprocess import Popen, PIPE, STDOUT
 
@@ -23,7 +24,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
     class Meta(object):
         """Meta information of ExperimentSerializer"""
         model = Experiment
-        fields = ('learning_rate', 'layers_count', 'steps_count',
+        fields = ('id', 'learning_rate', 'layers_count', 'steps_count',
                   'accuracy', 'model_id')
         extra_kwargs = {
             'model_id': {'source': 'model'},
@@ -40,8 +41,9 @@ class ExperimentSerializer(serializers.ModelSerializer):
         1. Call train script to get experiment results
         2. Save results along with params into DB
         """
-        script_path = settings.BASE_DIR + '/ml_model_trainer/train.py'
-        images_dir = settings.BASE_DIR + '/media/exp_images/'
+        script_path = os.path.abspath('model_scripts/train.py')
+        images_dir = os.path.join(
+            settings.BASE_DIR + settings.DATA_IMAGES_DIR_PATH)
 
         train = Popen(
             ["python", script_path,
@@ -63,7 +65,7 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta(object):
         """Meta information of ImageSerializer"""
         model = Image
-        fields = ('model_id', 'image',)
+        fields = ('id', 'model_id', 'image',)
         extra_kwargs = {
             'model_id': {'source': 'model'}
         }

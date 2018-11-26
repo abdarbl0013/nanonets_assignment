@@ -16,6 +16,11 @@ class Experiment(models.Model):
     steps_count = models.IntegerField()
     accuracy = models.FloatField()
 
+    class Meta:
+        """Meta options"""
+        unique_together = ('learning_rate', 'layers_count', 'steps_count',
+                           'model')
+
 
 class Image(models.Model):
     """Model to store uploaded image file"""

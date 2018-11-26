@@ -25,7 +25,7 @@ SECRET_KEY = 'q^v!nbl_vmxdnb2nejb&kc&^j09+kbmly3#8erbuk6m94ea7a^'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['13.127.48.253']
+ALLOWED_HOSTS = ['13.127.48.253', '127.0.0.1']
 
 
 # Application definition
@@ -123,3 +123,6 @@ STATIC_URL = '/static/'
 
 # Media Files
 MEDIA_ROOT = BASE_DIR + '/media/'
+
+# Import project constants
+from .constants import *

@@ -7,23 +7,30 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, \
+    RetrieveDestroyAPIView, DestroyAPIView
 
-from .models import Experiment
+from .models import Experiment, MLModel, Image
 from .serializers import ExperimentSerializer, ImageSerializer, \
     MLModelSerializer
 
 
-class MLModelView(CreateAPIView):
+class MLModelView(RetrieveUpdateAPIView, CreateAPIView):
     """View creates Machine learning model"""
 
     serializer_class = MLModelSerializer
+    queryset = MLModel.objects.all()
 
 
-class ExperimentView(CreateAPIView):
+class ExperimentView(RetrieveDestroyAPIView, CreateAPIView):
     """View runs experiment and save data into model"""
 
     serializer_class = ExperimentSerializer
+    queryset = Experiment.objects.all()
+
+    def get_queryset(self):
+        """Get list of items for Experiment View"""
+        return self.queryset.filter(model_id=self.kwargs['model_id'])
 
     def post(self, request, *args, **kwargs):
         """Handle POST request
@@ -36,10 +43,15 @@ class ExperimentView(CreateAPIView):
         return super(ExperimentView, self).post(request, *args, **kwargs)
 
 
-class UploadImageView(CreateAPIView):
+class UploadImageView(DestroyAPIView, CreateAPIView):
     """View upload images and save into db"""
 
     serializer_class = ImageSerializer
+    queryset = Image.objects.all()
+
+    def get_queryset(self):
+        """Get list of items for Experiment View"""
+        return self.queryset.filter(model_id=self.kwargs['model_id'])
 
     def post(self, request, *args, **kwargs):
         """Handle POST request
@@ -56,26 +68,42 @@ class TestView(APIView):
     """View to test optimum experiment params"""
 
     def post(self, request, *args, **kwargs):
-        """Execute test script to test best accuracy experiment params"""
-        request_data = request.data.dict()
-        image_file = request_data['image']
-        full_filename = os.path.join('media', 'test_images', image_file.name)
-        fout = open(full_filename, 'wb+')
-        file_content = ContentFile(image_file.read())
-        for chunk in file_content.chunks():
-            fout.write(chunk)
-        fout.close()
+        """Handles POST request
 
+        Notes
+        -----
+        1. Saves uploaded test file to directory and name it
+        2. Fetch parameters of most accurate experiment
+        3. Run test script with test image name and parameters from last step
+        4. Map test experiment result to keys and return response
+        """
+        request_data = request.data.dict()
+        image_file = request_data['test_image']
+        test_images_dir = settings.TEST_IMAGES_DIR_PATH
+        if not os.path.exists(test_images_dir):
+            os.makedirs(test_images_dir)
+        test_filename = os.path.join(test_images_dir, image_file.name)
+
+        with open(test_filename, 'wb+') as file_obj:
+            file_content = ContentFile(image_file.read())
+            for chunk in file_content.chunks():
+                file_obj.write(chunk)
+
+        # Fetch parameters of most accurate experiment
         best_experiment = Experiment.objects.order_by('-accuracy').first()
+        if not best_experiment:
+            raise Exception('No experiment has been performed yet')
+
         learning_rate = str(best_experiment.learning_rate)
         layers_count = str(best_experiment.layers_count)
         steps_count = str(best_experiment.steps_count)
 
-        script_path = settings.BASE_DIR + '/ml_model_trainer/test.py'
+        # Execute test script
+        script_path = os.path.abspath('model_scripts/test.py')
         test = Popen(
             ["python", script_path,
              "--i", learning_rate, "--j", layers_count, "--k", steps_count,
-             "--image", full_filename],
+             "--image", test_filename],
             stdout=PIPE, stderr=STDOUT)
         exp_result = test.stdout.read()
         test_dict = ast.literal_eval(exp_result.decode('utf-8'))
@@ -84,7 +112,6 @@ class TestView(APIView):
             'learning_rate': test_dict['i'],
             'layers_count': test_dict['j'],
             'steps_count': test_dict['k'],
-            'accuracy': test_dict['accuracy'],
-            'image': test_dict['image']
+            'accuracy': test_dict['accuracy']
         }
         return Response(result_dict, status=status.HTTP_201_CREATED)
